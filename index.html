@@ -1,27 +1,70 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dashcam-viewer</title>
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashcam GPS Viewer</title>
 
-    <header>
-        Dashcam GPS Viewer
+    <link rel="icon" href="/favicon.ico">
+
+</head>
+
+<body>
+
+    <header id="header">
+        <h2>🚗 Dashcam GPS Viewer</h2>
     </header>
 
     <div id="container">
 
+        <!-- Sidebar -->
         <aside id="sidebar">
+
+            <section class="panel">
+
+                <h3>Load GPS Data</h3>
+
+                <input
+                    id="zipInput"
+                    type="file"
+                    accept=".zip">
+
+            </section>
+
+            <section class="panel">
+
+                <h3>Trip Information</h3>
+
+                <div id="tripInfo">
+
+                    <p>No trip loaded.</p>
+
+                </div>
+
+            </section>
+
         </aside>
 
-        <main>
+        <!-- Main Content -->
+        <main id="main">
 
             <div id="map"></div>
 
-            <div id="dashboard"></div>
+            <div id="dashboard">
+
+                <div id="statistics">
+
+                    <h3>Statistics</h3>
+
+                    <div id="statsContainer">
+
+                        <p>Load a trip to see statistics.</p>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </main>
 
