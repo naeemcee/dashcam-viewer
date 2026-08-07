@@ -1,4 +1,6 @@
 import JSZip from "jszip";
+import { GPSPoint } from "../models/GPSPoint.js";
+import { Trip } from "../models/Trip.js";
 
 export class GPSParser {
 
@@ -20,25 +22,11 @@ export class GPSParser {
         }
 
         allPoints.sort((a,b)=>a.timestamp-b.timestamp);
-        return allPoints;
+        // return allPoints;
+
+        return new Trip(allPoints);
     }
 
-    // async loadZip(file) {
-    //     const zip = await JSZip.loadAsync(file);
-    //     const gpsFiles = [];
-
-    //     zip.forEach((path, entry) => {
-    //         if(path.toLowerCase().endsWith(".txt"))
-    //             gpsFiles.push(entry);
-    //     });
-
-    //     const contents = [];
-    //     for(const file of gpsFiles){
-    //         contents.push(await file.async("string"));
-    //     }
-
-    //     return contents;
-    // }
 
 
 parseLine(line) {
@@ -49,11 +37,17 @@ parseLine(line) {
     if(!match)
         return null;
 
-    return {
-        timestamp: new Date(match[1]+" "+match[2]),
-        lat: Number(match[3]),
-        lon: Number(match[4])
-    };
+    // return {
+    //     timestamp: new Date(match[1]+" "+match[2]),
+    //     lat: Number(match[3]),
+    //     lon: Number(match[4])
+    // };
+
+    return new GPSPoint(
+        new Date(match[1] + " " + match[2]),
+        Number(match[3]),
+        Number(match[4])
+    );
 }
 
 

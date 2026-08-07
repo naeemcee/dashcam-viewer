@@ -31,6 +31,24 @@ export class MapManager {
         this.markerLayer = L.layerGroup().addTo(this.map);
     }
 
+    displayTrip(trip) {
+        if (trip.isEmpty) {
+            return;
+        }
+
+        const latLngs = trip.points.map(point => [
+            point.lat,
+            point.lon
+        ]);
+        
+        this.drawRoute(latLngs);
+
+        this.drawMarkers(
+            latLngs[0],
+            latLngs.at(-1)
+        );
+    }
+
     drawRoute(points) {
         this.routeLayer.clearLayers();
 
