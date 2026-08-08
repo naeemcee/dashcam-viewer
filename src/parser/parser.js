@@ -30,12 +30,49 @@ export class GPSParser {
 
 
 parseLine(line) {
-    const regex = /(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2}).*?N:([0-9.]+).*?E:([0-9.]+)/;
+    // const regex = /(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2}).*?N:([0-9.]+).*?E:([0-9.]+)/;
+    // const regex = /^(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})\s+N:([+-]?\d+(?:\.\d+)?)\s+E:([+-]?\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)\s+km\/h/i;
+
+    const regex = /^(\d{4}\/\d{2}\/\d{2})\s+(\d{2}:\d{2}:\d{2})\s+N:([+-]?\d+(?:\.\d+)?)\s+E:([+-]?\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)\s+km\/h\s+([+-]?\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)\s+(\d+)\s+x:([+-]?\d+(?:\.\d+)?)\s+y:([+-]?\d+(?:\.\d+)?)\s+z:([+-]?\d+(?:\.\d+)?)/i;
 
     const match = line.match(regex);
 
-    if(!match)
+    if (!match) {
         return null;
+    }
+
+    return new GPSPoint(
+
+        // 1 + 2: timestamp
+        new Date(`${match[1]} ${match[2]}`),
+
+        // 3: latitude
+        Number(match[3]),
+
+        // 4: longitude
+        Number(match[4]),
+
+        // 5: speed
+        Number(match[5]),
+
+        // 6: heading
+        Number(match[6]),
+
+        // 7: altitude
+        Number(match[7]),
+
+        // 8: satellites
+        Number(match[8]),
+
+        // 9: acceleration X
+        Number(match[9]),
+
+        // 10: acceleration Y
+        Number(match[10]),
+
+        // 11: acceleration Z
+        Number(match[11])
+    );
 
     // return {
     //     timestamp: new Date(match[1]+" "+match[2]),
@@ -43,11 +80,13 @@ parseLine(line) {
     //     lon: Number(match[4])
     // };
 
-    return new GPSPoint(
-        new Date(match[1] + " " + match[2]),
-        Number(match[3]),
-        Number(match[4])
-    );
+    // return new GPSPoint(
+        // new Date(match[1] + " " + match[2]),
+    //     new Date(`${match[1]} ${match[2]}`),
+    //     Number(match[3]),
+    //     Number(match[4]),
+    //     Number(match[5])
+    // );
 }
 
 

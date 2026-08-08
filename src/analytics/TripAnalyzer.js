@@ -83,10 +83,13 @@ export class TripAnalyzer {
             const previous = trip.points[i - 1];
             const current = trip.points[i];
 
-            const timeSeconds =
-                (current.timestamp - previous.timestamp) / 1000;
+            const timeSeconds = (current.timestamp - previous.timestamp) / 1000;
 
             if (timeSeconds <= 0) {
+                continue;
+            }
+
+            if (timeSeconds > 120) {
                 continue;
             }
 
@@ -98,49 +101,61 @@ export class TripAnalyzer {
                 }
             );
 
-            const speedKmh =
-                segmentDistance / (timeSeconds / 3600);
+            // const speedKmh = segmentDistance / (timeSeconds / 3600);
+            const speedKmh = this.getPointSpeed(
+                previous,
+                current,
+                timeSeconds
+            );
 
-            statistics.maxSpeedKmh =
-                Math.max(
+            statistics.maxSpeedKmh = Math.max(
                     statistics.maxSpeedKmh,
                     speedKmh
-                );
+            );
 
             if (speedKmh >= this.movingSpeedThreshold) {
-
                 totalMovingDistance += segmentDistance;
                 totalMovingTime += timeSeconds;
-
             }
-
         }
 
         if (statistics.durationSeconds > 0) {
-
             statistics.averageSpeedKmh =
                 statistics.distanceKm /
                 (statistics.durationSeconds / 3600);
-
         }
 
         if (totalMovingTime > 0) {
-
             statistics.movingAverageSpeedKmh =
                 totalMovingDistance /
                 (totalMovingTime / 3600);
-
         }
 
-        statistics.movingTimeSeconds =
-            totalMovingTime;
+        statistics.movingTimeSeconds = totalMovingTime;
 
-        statistics.idleTimeSeconds =
-            Math.max(
+        statistics.idleTimeSeconds = Math.max(
                 0,
-                statistics.durationSeconds -
-                totalMovingTime
-            );
+                statistics.durationSeconds - totalMovingTime
+        );
+
+    }
+
+    getPointSpeed(previous, current, timeSeconds) {
+
+    // Prefer dashcam-recorded speed
+    if (
+        current.speed !== null &&
+        Number.isFinite(current.speed)
+    ) {
+        return current.speed;
+    }
+
+    // Fall back to calculated GPS speed
+    return this.calculateSpeed(
+        previous,
+        current,
+        timeSeconds
+    );
 
     }
 
