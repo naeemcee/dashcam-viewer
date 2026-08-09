@@ -2,8 +2,11 @@ import { distance } from "@turf/turf";
 
 export class TripAnalyzer {
 
-    constructor() {
-        this.movingSpeedThreshold = 3; // km/h
+    constructor(options = {}) {
+
+        this.movingSpeedThreshold = options.movingSpeedThreshold ?? 3;
+        this.maxTimeGapSeconds = options.maxTimeGapSeconds ?? 120;
+
     }
 
     analyze(trip) {
@@ -18,9 +21,15 @@ export class TripAnalyzer {
             durationSeconds: 0,
             movingTimeSeconds: 0,
             idleTimeSeconds: 0,
-            averageSpeedKmh: 0,
-            movingAverageSpeedKmh: 0,
-            maxSpeedKmh: 0
+            averageSpeedKmph: 0,
+            movingAverageSpeedKmph: 0,
+            maxSpeedKmph: 0,
+            elevationGainMeters: 0,
+            elevationLossMeters: 0,
+            minAltitudeMeters: null,
+            maxAltitudeMeters: null,
+            averageSatellites: 0,
+            minSatellites: null
         };
 
         this.calculateDistance(
@@ -38,8 +47,17 @@ export class TripAnalyzer {
             statistics
         );
 
-        return statistics;
+        this.calculateElevation(
+            trip,
+            statistics
+        );
 
+        this.calculateGPSQuality(
+            trip,
+            statistics
+        );
+
+        return statistics;
     }
 
     calculateDistance(trip, statistics) {
@@ -49,51 +67,171 @@ export class TripAnalyzer {
             const previous = trip.points[i - 1];
             const current = trip.points[i];
 
-            const segmentDistance = distance(
-                [previous.lon, previous.lat],
-                [current.lon, current.lat],
-                {
-                    units: "kilometers"
-                }
-            );
+            const timeSeconds =
+                (current.timestamp -
+                    previous.timestamp) / 1000;
 
-            statistics.distanceKm += segmentDistance;
+            if (timeSeconds <= 0) {
+                continue;
+            }
 
+            if (
+                timeSeconds >
+                this.maxTimeGapSeconds
+            ) {
+                continue;
+            }
+
+            const segmentDistance =
+                distance(
+                    [previous.lon, previous.lat],
+                    [current.lon, current.lat],
+                    {
+                        units: "kilometers"
+                    }
+                );
+
+            statistics.distanceKm +=
+                segmentDistance;
         }
-
     }
 
     calculateDuration(trip, statistics) {
 
         const start = trip.start.timestamp;
+
         const finish = trip.finish.timestamp;
 
         statistics.durationSeconds =
-            (finish - start) / 1000;
-
+            Math.max(
+                0,
+                (finish - start) / 1000
+            );
     }
 
     calculateSpeeds(trip, statistics) {
 
-        let totalMovingDistance = 0;
-        let totalMovingTime = 0;
+        let movingTime = 0;
+        let movingDistance = 0;
 
         for (let i = 1; i < trip.points.length; i++) {
 
             const previous = trip.points[i - 1];
             const current = trip.points[i];
 
-            const timeSeconds = (current.timestamp - previous.timestamp) / 1000;
+            const timeSeconds =
+                (current.timestamp -
+                    previous.timestamp) / 1000;
 
             if (timeSeconds <= 0) {
                 continue;
             }
 
-            if (timeSeconds > 120) {
+            if (
+                timeSeconds >
+                this.maxTimeGapSeconds
+            ) {
                 continue;
             }
 
-            const segmentDistance = distance(
+            const segmentDistance =
+                distance(
+                    [previous.lon, previous.lat],
+                    [current.lon, current.lat],
+                    {
+                        units: "kilometers"
+                    }
+                );
+
+            const speedKmph =
+                this.getPointSpeed(
+                    previous,
+                    current,
+                    timeSeconds
+                );
+
+            if (speedKmph === null) {
+                continue;
+            }
+
+            statistics.maxSpeedKmph =
+                Math.max(
+                    statistics.maxSpeedKmph,
+                    speedKmph
+                );
+
+            if (
+                speedKmph >=
+                this.movingSpeedThreshold
+            ) {
+
+                movingTime +=
+                    timeSeconds;
+
+                movingDistance +=
+                    segmentDistance;
+            }
+        }
+
+        if (statistics.durationSeconds > 0) {
+
+            statistics.averageSpeedKmph =
+                statistics.distanceKm /
+                (statistics.durationSeconds / 3600);
+        }
+
+        if (movingTime > 0) {
+
+            statistics.movingAverageSpeedKmph =
+                movingDistance /
+                (movingTime / 3600);
+        }
+
+        statistics.movingTimeSeconds =
+            movingTime;
+
+        statistics.idleTimeSeconds =
+            Math.max(
+                0,
+                statistics.durationSeconds -
+                movingTime
+            );
+    }
+
+    getPointSpeed(
+        previous,
+        current,
+        timeSeconds
+    ) {
+
+        // Prefer dashcam-recorded speed
+        if (
+            current.speedKmph !== null &&
+            Number.isFinite(current.speedKmph)
+        ) {
+            return current.speedKmph;
+        }
+
+        // Fallback to calculated GPS speed
+        return this.calculateGPSSpeed(
+            previous,
+            current,
+            timeSeconds
+        );
+    }
+
+    calculateGPSSpeed(
+        previous,
+        current,
+        timeSeconds
+    ) {
+
+        if (timeSeconds <= 0) {
+            return null;
+        }
+
+        const segmentDistance =
+            distance(
                 [previous.lon, previous.lat],
                 [current.lon, current.lat],
                 {
@@ -101,77 +239,113 @@ export class TripAnalyzer {
                 }
             );
 
-            // const speedKmh = segmentDistance / (timeSeconds / 3600);
-            const speedKmh = this.getPointSpeed(
-                previous,
-                current,
-                timeSeconds
-            );
+        return segmentDistance /
+            (timeSeconds / 3600);
+    }
 
-            statistics.maxSpeedKmh = Math.max(
-                    statistics.maxSpeedKmh,
-                    speedKmh
-            );
+    calculateElevation(trip, statistics) {
 
-            if (speedKmh >= this.movingSpeedThreshold) {
-                totalMovingDistance += segmentDistance;
-                totalMovingTime += timeSeconds;
+        const altitudes =
+            trip.points
+                .map(point => point.altitudeMeters)
+                .filter(
+                    altitude =>
+                        Number.isFinite(altitude)
+                );
+
+        if (altitudes.length === 0) {
+            return;
+        }
+
+        statistics.minAltitudeMeters =
+            Math.min(...altitudes);
+
+        statistics.maxAltitudeMeters =
+            Math.max(...altitudes);
+
+        for (let i = 1; i < trip.points.length; i++) {
+
+            const previous =
+                trip.points[i - 1];
+
+            const current =
+                trip.points[i];
+
+            if (
+                !Number.isFinite(
+                    previous.altitudeMeters
+                ) ||
+                !Number.isFinite(
+                    current.altitudeMeters
+                )
+            ) {
+                continue;
+            }
+
+            const change =
+                current.altitudeMeters -
+                previous.altitudeMeters;
+
+            if (change > 0) {
+
+                statistics.elevationGainMeters +=
+                    change;
+
+            }
+            else if (change < 0) {
+
+                statistics.elevationLossMeters +=
+                    Math.abs(change);
+
             }
         }
-
-        if (statistics.durationSeconds > 0) {
-            statistics.averageSpeedKmh =
-                statistics.distanceKm /
-                (statistics.durationSeconds / 3600);
-        }
-
-        if (totalMovingTime > 0) {
-            statistics.movingAverageSpeedKmh =
-                totalMovingDistance /
-                (totalMovingTime / 3600);
-        }
-
-        statistics.movingTimeSeconds = totalMovingTime;
-
-        statistics.idleTimeSeconds = Math.max(
-                0,
-                statistics.durationSeconds - totalMovingTime
-        );
-
     }
 
-    getPointSpeed(previous, current, timeSeconds) {
+    calculateGPSQuality(trip, statistics) {
 
-    // Prefer dashcam-recorded speed
-    if (
-        current.speed !== null &&
-        Number.isFinite(current.speed)
-    ) {
-        return current.speed;
-    }
+        const satellites =
+            trip.points
+                .map(point => point.satelliteCount)
+                .filter(
+                    count =>
+                        Number.isFinite(count)
+                );
 
-    // Fall back to calculated GPS speed
-    return this.calculateSpeed(
-        previous,
-        current,
-        timeSeconds
-    );
+        if (satellites.length === 0) {
+            return;
+        }
 
+        const total =
+            satellites.reduce(
+                (sum, count) => sum + count,
+                0
+            );
+
+        statistics.averageSatellites =
+            total / satellites.length;
+
+        statistics.minSatellites =
+            Math.min(...satellites);
     }
 
     emptyStatistics() {
 
         return {
+
             pointCount: 0,
             distanceKm: 0,
             durationSeconds: 0,
             movingTimeSeconds: 0,
             idleTimeSeconds: 0,
             averageSpeedKmh: 0,
-            movingAverageSpeedKmh: 0,
-            maxSpeedKmh: 0
+            movingAverageSpeedKmph: 0,
+            maxSpeedKmh: 0,
+            elevationGainMeters: 0,
+            elevationLossMeters: 0,
+            minAltitudeMeters: null,
+            maxAltitudeMeters: null,
+            averageSatellites: 0,
+            minSatellites: null
         };
-
     }
-
 }

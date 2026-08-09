@@ -25,8 +25,7 @@ export class StopDetector {
             const previous = trip.points[i - 1];
             const current = trip.points[i];
 
-            const timeSeconds =
-                (current.timestamp - previous.timestamp) / 1000;
+            const timeSeconds = (current.timestamp - previous.timestamp) / 1000;
 
             if (timeSeconds <= 0) {
                 continue;
@@ -101,38 +100,33 @@ export class StopDetector {
     getPointSpeed(previous, current, timeSeconds) {
 
         if (
-            current.speed !== null &&
-            Number.isFinite(current.speed)
+            current.speedKmph !== null &&
+            Number.isFinite(current.speedKmph)
         ) {
-            return current.speed;
+            return current.speedKmph;
         }
 
-        return this.calculateSpeed(
+        return this.calculateGPSSpeed(
             previous,
             current,
             timeSeconds
         );
     }
 
-    calculateSpeed(previous, current, timeSeconds) {
+    calculateGPSSpeed(previous, current, timeSeconds) {
 
+        if (timeSeconds <= 0) {
+            return null;
+        }
         const R = 6371;
 
-        const lat1 =
-            this.toRadians(previous.lat);
+        const lat1 = this.toRadians(previous.lat);
 
-        const lat2 =
-            this.toRadians(current.lat);
+        const lat2 = this.toRadians(current.lat);
 
-        const deltaLat =
-            this.toRadians(
-                current.lat - previous.lat
-            );
+        const deltaLat = this.toRadians(current.lat - previous.lat);
 
-        const deltaLon =
-            this.toRadians(
-                current.lon - previous.lon
-            );
+        const deltaLon = this.toRadians(current.lon - previous.lon);
 
         const a =
             Math.sin(deltaLat / 2) ** 2 +
@@ -140,15 +134,15 @@ export class StopDetector {
             Math.cos(lat2) *
             Math.sin(deltaLon / 2) ** 2;
 
-        const c =
-            2 * Math.atan2(
-                Math.sqrt(a),
-                Math.sqrt(1 - a)
-            );
+        const c = 2 * Math.atan2 (Math.sqrt(a), Math.sqrt(1 - a));
 
-        return (
-            R * c
-        ) / (timeSeconds / 3600);
+        const distanceKm = R * c;
+
+        return distanceKm / (timeSeconds / 3600);
+
+        // return (
+        //     R * c
+        // ) / (timeSeconds / 3600);
 
     }
 

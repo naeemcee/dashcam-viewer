@@ -14,6 +14,7 @@ export class GPSParser {
         });
 
         const allPoints = [];
+        console.log(`Total files in ZIP: ${gpsFiles.length}`);
 
         for(const file of gpsFiles){
             const text = await file.async("string");

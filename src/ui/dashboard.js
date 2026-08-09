@@ -30,23 +30,21 @@ export class Dashboard {
             <div class="stat">
                 <strong>Average Speed</strong>
                 <span>
-                    ${statistics.averageSpeedKmh.toFixed(1)} km/h
+                    ${this.formatSpeed(statistics.averageSpeedKmph)}
                 </span>
             </div>
 
             <div class="stat">
                 <strong>Moving Average</strong>
                 <span>
-                    ${statistics.movingAverageSpeedKmh.toFixed(1)}
-                    km/h
+                    ${this.formatSpeed(statistics.movingAverageSpeedKmph)}
                 </span>
             </div>
 
             <div class="stat">
                 <strong>Maximum Speed</strong>
                 <span>
-                    ${statistics.maxSpeedKmh.toFixed(1)}
-                    km/h
+                    ${this.formatSpeed(statistics.maxSpeedKmph)}
                 </span>
             </div>
 
@@ -56,24 +54,79 @@ export class Dashboard {
                     ${statistics.pointCount.toLocaleString()}
                 </span>
             </div>
+            <div class="stat">
+                <strong>Elevation Gain</strong>
+                <span>
+                    ${statistics.elevationGainMeters.toFixed(0)} m
+                </span>
+            </div>
+
+            <div class="stat">
+                <strong>Elevation Loss</strong>
+                <span>
+                    ${statistics.elevationLossMeters.toFixed(0)} m
+                </span>
+            </div>
+
+            <div class="stat">
+                <strong>GPS Satellites</strong>
+                <span>
+                    ${statistics.averageSatellites.toFixed(1)}
+                </span>
+            </div>
+
+            <div class="stat">
+                <strong>Moving Time</strong>
+                <span>
+                    ${this.formatDuration(
+                        statistics.movingTimeSeconds
+                    )}
+                </span>
+            </div>
+
+            <div class="stat">
+                <strong>Stopped Time</strong>
+                <span>
+                    ${this.formatDuration(
+                        statistics.idleTimeSeconds
+                    )}
+                </span>
+            </div>
 
         `;
 
     }
 
+
     formatDuration(seconds) {
 
-        const hours =
-            Math.floor(seconds / 3600);
+        if (!Number.isFinite(seconds)) {
+            return "--";
+        }
 
-        const minutes =
-            Math.floor((seconds % 3600) / 60);
+        const totalSeconds = Math.round(seconds);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const remainingSeconds = totalSeconds % 60;
 
-        const secs =
-            Math.floor(seconds % 60);
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
 
-        return `${hours}h ${minutes}m ${secs}s`;
+        if (minutes > 0) {
+            return `${minutes}m ${remainingSeconds}s`;
+        }
 
+        return `${remainingSeconds}s`;
+    }
+
+    formatSpeed(speedKmh) {
+
+        if (!Number.isFinite(speedKmh)) {
+            return "--";
+        }
+
+        return `${speedKmh.toFixed(1)} km/h`;
     }
 
 }

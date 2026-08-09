@@ -56,22 +56,33 @@ export class App {
         // const trip = await this.parser.loadZip(file);
 
         let trip = await this.parser.loadZip(file);
+        console.log(`Loaded ${trip.pointCount} GPS points`);
 
-        // console.log("Sample GPS point: ", trip.points[0]);
-        console.table({
-            latitude: trip.points[0].latitude,
-            longitude: trip.points[0].longitude,
-            speedKmph: trip.points[0].speedKmph,
-            headingDegrees: trip.points[0].headingDegrees,
-            altitudeMeters: trip.points[0].altitudeMeters,
-            satelliteCount: trip.points[0].satelliteCount,
-            accelerationX: trip.points[0].accelerationX,
-            accelerationY: trip.points[0].accelerationY,
-            accelerationZ: trip.points[0].accelerationZ
-        });
-        // console.log("First point:", trip.points[0]);
-        // console.log("Second point:", trip.points[1]);
-        // console.log("Last point:", trip.points.at(-1));
+        console.log("Sample GPS point: ", trip.points[0]);
+        // console.table({
+        //     timestamp: trip.points[0].timestamp,
+        //     latitude: trip.points[0].latitude,
+        //     longitude: trip.points[0].longitude,
+        //     speedKmph: trip.points[0].speedKmph,
+        //     headingDegrees: trip.points[0].headingDegrees,
+        //     altitudeMeters: trip.points[0].altitudeMeters,
+        //     satelliteCount: trip.points[0].satelliteCount,
+        //     accelerationX: trip.points[0].accelerationX,
+        //     accelerationY: trip.points[0].accelerationY,
+        //     accelerationZ: trip.points[0].accelerationZ
+        // });
+
+        console.table(
+            trip.points.slice(0, 10).map(point => ({
+                time: point.timestamp,
+                lat: point.lat,
+                lon: point.lon,
+                speed: point.speedKmph,
+                heading: point.headingDegrees,
+                altitude: point.altitudeMeters,
+                satellites: point.satelliteCount
+            }))
+        );
 
         if (trip.isEmpty) {
             alert ("No GPS data found!");
@@ -81,7 +92,7 @@ export class App {
         const originalPointCount = trip.pointCount;
         const cleanedPoints = this.cleaner.clean(trip.points);
         trip.points = cleanedPoints;
-        console.log(`GPS points: ${originalPointCount} → ${trip.pointCount}`);
+        console.log(`GPS points cleanup: ${originalPointCount} → ${trip.pointCount}`);
 
         const statistics = this.analyzer.analyze(trip);
         console.log("Trip statistics:", statistics);
@@ -100,7 +111,6 @@ export class App {
         this.dashboard.update(statistics);
 
         this.map.displayTrip(trip);
-        console.log(`Loaded ${trip.pointCount} GPS points`);
 
     }
 
