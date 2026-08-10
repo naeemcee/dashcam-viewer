@@ -2,7 +2,7 @@ export class GPSCleaner {
 
     constructor(options = {}) {
 
-        this.maxSpeedKmh = options.maxSpeedKmh ?? 180;
+        this.maxSpeedKmph = options.maxSpeedKmph ?? 180;
         this.maxTimeGapSeconds = options.maxTimeGapSeconds ?? 120;
 
     }
@@ -33,7 +33,7 @@ export class GPSCleaner {
                 continue;
             }
 
-            const speedKmh =
+            const speedKmph =
                 this.calculateSpeed(
                     previous,
                     current,
@@ -41,12 +41,12 @@ export class GPSCleaner {
                 );
 
             // Ignore physically impossible GPS jumps
-            if (speedKmh > this.maxSpeedKmh) {
+            if (speedKmph > this.maxSpeedKmph) {
                 console.warn(
                     "Ignoring GPS jump:",
                     previous,
                     current,
-                    speedKmh
+                    speedKmph
                 );
 
                 continue;

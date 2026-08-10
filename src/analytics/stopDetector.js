@@ -2,8 +2,8 @@ export class StopDetector {
 
     constructor(options = {}) {
 
-        this.speedThresholdKmh =
-            options.speedThresholdKmh ?? 3;
+        this.speedThresholdKmph =
+            options.speedThresholdKmph ?? 3;
 
         this.minimumStopSeconds =
             options.minimumStopSeconds ?? 30;
@@ -37,7 +37,7 @@ export class StopDetector {
                 timeSeconds
             );
 
-            const stationary = speed <= this.speedThresholdKmh;
+            const stationary = speed <= this.speedThresholdKmph;
 
             if (stationary && stopStart === null) {
                 stopStart = previous;
@@ -50,10 +50,7 @@ export class StopDetector {
                     (stopEnd.timestamp -
                         stopStart.timestamp) / 1000;
 
-                if (
-                    durationSeconds >=
-                    this.minimumStopSeconds
-                ) {
+                if (durationSeconds >= this.minimumStopSeconds) {
 
                     stops.push({
                         start: stopStart,
@@ -74,14 +71,9 @@ export class StopDetector {
 
             const stopEnd = trip.finish;
 
-            const durationSeconds =
-                (stopEnd.timestamp -
-                    stopStart.timestamp) / 1000;
+            const durationSeconds = (stopEnd.timestamp - stopStart.timestamp) / 1000;
 
-            if (
-                durationSeconds >=
-                this.minimumStopSeconds
-            ) {
+            if (durationSeconds >= this.minimumStopSeconds) {
 
                 stops.push({
                     start: stopStart,

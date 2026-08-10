@@ -25,13 +25,13 @@ export class App {
         this.parser = new GPSParser();
         this.analyzer = new TripAnalyzer();
         this.cleaner = new GPSCleaner({
-            maxSpeedKmh: 180,
+            maxSpeedKmph: 180,
             maxTimeGapSeconds: 120
         });
 
         this.stopDetector = new StopDetector({
-            speedThresholdKmh: 3,
-            minimumStopSeconds: 30
+            speedThresholdKmph: 3,
+            minimumStopSeconds: 60
         });
 
         this.dashboard = new Dashboard();
@@ -72,17 +72,17 @@ export class App {
         //     accelerationZ: trip.points[0].accelerationZ
         // });
 
-        console.table(
-            trip.points.slice(0, 10).map(point => ({
-                time: point.timestamp,
-                lat: point.lat,
-                lon: point.lon,
-                speed: point.speedKmph,
-                heading: point.headingDegrees,
-                altitude: point.altitudeMeters,
-                satellites: point.satelliteCount
-            }))
-        );
+        // console.table(
+        //     trip.points.slice(0, 10).map(point => ({
+        //         time: point.timestamp,
+        //         lat: point.lat,
+        //         lon: point.lon,
+        //         speed: point.speedKmph,
+        //         heading: point.headingDegrees,
+        //         altitude: point.altitudeMeters,
+        //         satellites: point.satelliteCount
+        //     }))
+        // );
 
         if (trip.isEmpty) {
             alert ("No GPS data found!");
@@ -97,20 +97,20 @@ export class App {
         const statistics = this.analyzer.analyze(trip);
         console.log("Trip statistics:", statistics);
 
-        const stops = this.stopDetector.detect(trip);
-        console.log("Statistics:", statistics);
-        
-        console.log("Stops:", stops);
-        // console.table(stops.map(stop => ({
-        //         start: stop.start.timestamp,
-        //         end: stop.end.timestamp,
-        //         duration: Math.round(stop.durationSeconds / 60) + " min"
-        //     }))
-        // );
+        const stops = this.stopDetector.detect(trip);        
+        // console.log("Stops:", stops);
+        console.table(stops.map(stop => ({
+                start: stop.start.timestamp,
+                end: stop.end.timestamp,
+                duration: Math.round(stop.durationSeconds / 60) + " min"
+            }))
+        );
         
         this.dashboard.update(statistics);
 
         this.map.displayTrip(trip);
+        this.map.drawSpeedColoredRoute(trip)
+        this.map.displayStops(stops);
 
     }
 

@@ -120,13 +120,13 @@ export class Dashboard {
         return `${remainingSeconds}s`;
     }
 
-    formatSpeed(speedKmh) {
+    formatSpeed(speedKmph) {
 
-        if (!Number.isFinite(speedKmh)) {
+        if (!Number.isFinite(speedKmph)) {
             return "--";
         }
 
-        return `${speedKmh.toFixed(1)} km/h`;
+        return `${speedKmph.toFixed(1)} km/h`;
     }
 
 }
