@@ -112,7 +112,7 @@ export class TripInfoPanel {
         this.container.innerHTML = `
             <h3>Trip Information</h3>
             <div class="trip-info-empty">
-                Select a point on the route.
+                Select a point on the route to inspect its GPS data.
             </div>
         `;
     }
