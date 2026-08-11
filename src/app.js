@@ -4,6 +4,7 @@ import { TripAnalyzer } from "./analytics/TripAnalyzer.js";
 import { GPSCleaner } from "./analytics/GPSCleaner.js";
 import { StopDetector } from "./analytics/StopDetector.js";
 import { Dashboard } from "./ui/dashboard.js";
+import { TripInfoPanel } from "./ui/TripInfoPanel.js";
 
 export class App {
 
@@ -17,6 +18,12 @@ export class App {
 
         this.zipInput = null;
         this.dashboard = null;
+
+        this.tripInfoPanel =
+        new TripInfoPanel(
+            "trip-info-panel"
+        );
+
     }
 
     initialize() {
@@ -37,6 +44,12 @@ export class App {
         this.dashboard = new Dashboard();
         this.zipInput = document.getElementById("zipInput");
         this.registerEvents();
+
+        this.map.setPointSelectedCallback(
+            point => {
+                this.tripInfoPanel.showPoint(point);
+            }
+        );
     }
 
     registerEvents() {

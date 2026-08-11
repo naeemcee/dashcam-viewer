@@ -172,3 +172,42 @@ body {
     border-top: 1px solid #ddd;
     margin: 6px 0;
 }
+
+#trip-info-panel {
+    width: 280px;
+    padding: 16px;
+    background: white;
+    border-left: 1px solid #ddd;
+    overflow-y: auto;
+}
+
+.trip-info h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.trip-info h4 {
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.info-row span {
+    color: #666;
+}
+
+.info-row strong {
+    text-align: right;
+}
+
+.trip-info-empty {
+    color: #777;
+    padding: 10px 0;
+}

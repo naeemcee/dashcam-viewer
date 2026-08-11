@@ -11,6 +11,8 @@ export class MapManager {
         this.markerLayer = null;
 
         this.speedSegments = null;
+
+        this.onPointSelected = null;
     }
 
 
@@ -32,6 +34,10 @@ export class MapManager {
         // Create reusable layers
         this.routeLayer = L.layerGroup().addTo(this.map);
         this.markerLayer = L.layerGroup().addTo(this.map);
+    }
+
+    setPointSelectedCallback(callback) {
+        this.onPointSelected = callback;
     }
 
 
@@ -285,6 +291,11 @@ export class MapManager {
             return;
         }
 
+        if (this.onPointSelected) {
+            this.onPointSelected(point);
+        }
+
+
         this.showPointPopup(
             event.latlng,
             point
@@ -324,8 +335,8 @@ export class MapManager {
     showPointPopup(latlng, point) {
 
         const speed =
-            Number.isFinite(point.speedKmh)
-                ? `${point.speedKmh.toFixed(1)} km/h`
+            Number.isFinite(point.speedKmph)
+                ? `${point.speedKmph.toFixed(1)} km/h`
                 : "--";
 
         const heading =
