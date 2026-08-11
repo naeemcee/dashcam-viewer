@@ -161,3 +161,14 @@ body {
 
     vertical-align: middle;
 }
+
+.gps-popup {
+    min-width: 180px;
+    line-height: 1.6;
+}
+
+.gps-popup hr {
+    border: 0;
+    border-top: 1px solid #ddd;
+    margin: 6px 0;
+}

@@ -105,190 +105,298 @@ export class MapManager {
     }
 
 
-    // drawSpeedColoredRoute(trip) {
-        
-    //     this.clearSpeedRoute();
-
-    //     if (!trip || trip.points.length < 2) {
-    //         return;
-    //     }
-
-    //     const segments = [];
-
-    //     for (let i = 1; i < trip.points.length; i++) {
-
-    //         const previous =
-    //             trip.points[i - 1];
-
-    //         const current =
-    //             trip.points[i];
-
-    //         const speed =
-    //             Number.isFinite(current.speedKmph)
-    //                 // ? current.speedKmph
-    //                 ? (previous.speedKmph + current.speedKmph) / 2
-    //                 : 0;
-
-    //         const segment = L.polyline(
-    //                 [
-    //                     [previous.lat, previous.lon],
-    //                     [current.lat, current.lon]
-    //                 ],
-    //                 {
-    //                     color: this.getSpeedColor(speed),
-    //                     weight: 5,
-    //                     opacity: 0.9
-    //                 }
-    //         );
-
-    //         segments.push(segment);
-    //     }
-
-    //     this.speedSegments = L.layerGroup(segments).addTo(this.map);
-
-    //     this.addSpeedLegend();
-
-    // }
-
     drawSpeedColoredRoute(trip) {
 
-    this.clearSpeedRoute();
+        this.clearSpeedRoute();
 
-    if (!trip || trip.points.length < 2) {
-        return;
-    }
-
-    const segments = [];
-
-    let currentColor = null;
-    let currentCoordinates = [];
-
-    for (let i = 1; i < trip.points.length; i++) {
-
-        const previous = trip.points[i - 1];
-        const current = trip.points[i];
-
-        const previousSpeed =
-            Number.isFinite(previous.speedKmph)
-                ? previous.speedKmph
-                : null;
-
-        const currentSpeed =
-            Number.isFinite(current.speedKmph)
-                ? current.speedKmph
-                : null;
-
-        let speed = null;
-
-        if (
-            previousSpeed !== null &&
-            currentSpeed !== null
-        ) {
-            speed =
-                (previousSpeed + currentSpeed) / 2;
-        }
-        else if (currentSpeed !== null) {
-            speed = currentSpeed;
-        }
-        else if (previousSpeed !== null) {
-            speed = previousSpeed;
+        if (!trip || trip.points.length < 2) {
+            return;
         }
 
-        const color =
-            this.getSpeedColor(speed);
+        const segments = [];
 
-        const start = [
-            previous.lat,
-            previous.lon
-        ];
+        let currentColor = null;
+        let currentCoordinates = [];
+        let currentPoints = [];
 
-        const end = [
-            current.lat,
-            current.lon
-        ];
+        for (let i = 1; i < trip.points.length; i++) {
 
-        /*
-         * Start a new group when the
-         * speed colour changes.
-         */
-        if (
-            currentColor !== null &&
-            color !== currentColor
-        ) {
+            const previous = trip.points[i - 1];
+            const current = trip.points[i];
 
-            if (currentCoordinates.length >= 2) {
+            const previousSpeed =
+                Number.isFinite(previous.speedKmph)
+                    ? previous.speedKmph
+                    : null;
 
-                segments.push({
-                    color: currentColor,
-                    coordinates: currentCoordinates
-                });
+            const currentSpeed =
+                Number.isFinite(current.speedKmph)
+                    ? current.speedKmph
+                    : null;
+
+            let speed = null;
+
+            if (
+                previousSpeed !== null &&
+                currentSpeed !== null
+            ) {
+                speed =
+                    (previousSpeed + currentSpeed) / 2;
+            }
+            else if (currentSpeed !== null) {
+                speed = currentSpeed;
+            }
+            else if (previousSpeed !== null) {
+                speed = previousSpeed;
             }
 
-            currentCoordinates = [
-                start,
-                end
+            const color =
+                this.getSpeedColor(speed);
+
+            const start = [
+                previous.lat,
+                previous.lon
             ];
 
-        }
-        else {
+            const end = [
+                current.lat,
+                current.lon
+            ];
 
-            if (currentCoordinates.length === 0) {
+            /*
+            * Start a new group when the
+            * speed colour changes.
+            */
+            if (
+                currentColor !== null &&
+                color !== currentColor
+            ) {
+
+                if (currentCoordinates.length >= 2) {
+
+                    segments.push({
+                        color: currentColor,
+                        coordinates: currentCoordinates,
+                        points: currentPoints
+                    });
+                }
 
                 currentCoordinates = [
                     start,
                     end
                 ];
 
+                currentPoints = [
+                    previous,
+                    current
+                ]
+
             }
             else {
 
-                currentCoordinates.push(end);
+                if (currentCoordinates.length === 0) {
+
+                    currentCoordinates = [
+                        start,
+                        end
+                    ];
+
+                }
+                else {
+
+                    currentCoordinates.push(end);
+                    currentPoints.push(current)
+                }
+            }
+
+            currentColor = color;
+        }
+
+        /*
+        * Add final segment.
+        */
+        if (currentCoordinates.length >= 2) {
+
+            segments.push({
+                color: currentColor,
+                coordinates: currentCoordinates,
+                points: currentPoints
+            });
+        }
+
+        /*
+        * Create one Leaflet polyline per
+        * colour run instead of one per GPS point.
+        */
+        const layers = segments.map(segment => {
+
+            const layer =  L.polyline(
+                segment.coordinates,
+                {
+                    color: segment.color,
+                    weight: 5,
+                    opacity: 0.9
+                }
+            );
+
+            layer.on("click", event => {
+                this.handleRouteClick(event, segment);
+            });
+
+            return layer
+
+        });
+
+        
+        this.speedSegments =
+            L.layerGroup(layers).addTo(this.map);
+
+        this.addSpeedLegend();
+
+        console.log(
+            `GPS points: ${trip.points.length}`
+        );
+
+        console.log(
+            `Speed route segments: ${segments.length}`
+        );
+    }
+
+    handleRouteClick(event, segment) {
+
+        const points =
+            segment.points;
+
+        if (!points || points.length === 0) {
+            return;
+        }
+
+        /*
+        * For now, use the GPS point
+        * closest to the clicked location.
+        */
+        const point =
+            this.findClosestPoint(
+                event.latlng,
+                points
+            );
+
+        if (!point) {
+            return;
+        }
+
+        this.showPointPopup(
+            event.latlng,
+            point
+        );
+    }
+
+    findClosestPoint(latlng, points) {
+
+        let closest = null;
+        let closestDistance = Infinity;
+
+        for (const point of points) {
+
+            const dLat =
+                point.lat -
+                latlng.lat;
+
+            const dLon =
+                point.lon -
+                latlng.lng;
+
+            const distance =
+                dLat * dLat +
+                dLon * dLon;
+
+            if (distance < closestDistance) {
+
+                closestDistance = distance;
+                closest = point;
             }
         }
 
-        currentColor = color;
+        return closest;
     }
 
-    /*
-     * Add final segment.
-     */
-    if (currentCoordinates.length >= 2) {
 
-        segments.push({
-            color: currentColor,
-            coordinates: currentCoordinates
-        });
+    showPointPopup(latlng, point) {
+
+        const speed =
+            Number.isFinite(point.speedKmh)
+                ? `${point.speedKmh.toFixed(1)} km/h`
+                : "--";
+
+        const heading =
+            Number.isFinite(point.headingDegrees)
+                ? `${point.headingDegrees.toFixed(1)}°`
+                : "--";
+
+        const altitude =
+            Number.isFinite(point.altitudeMeters)
+                ? `${point.altitudeMeters.toFixed(1)} m`
+                : "--";
+
+        const satellites =
+            Number.isFinite(point.satelliteCount)
+                ? point.satelliteCount
+                : "--";
+
+        const acceleration =
+            Number.isFinite(point.accelerationX) &&
+            Number.isFinite(point.accelerationY) &&
+            Number.isFinite(point.accelerationZ)
+                ? `
+                    ${point.accelerationX.toFixed(2)},
+                    ${point.accelerationY.toFixed(2)},
+                    ${point.accelerationZ.toFixed(2)}
+                `
+                : "--";
+
+        const popup = L.popup()
+            .setLatLng(latlng)
+            .setContent(`
+                <div class="gps-popup">
+
+                    <strong>GPS Point</strong>
+
+                    <hr>
+
+                    <div>
+                        <strong>Time:</strong>
+                        ${point.timestamp.toLocaleString()}
+                    </div>
+
+                    <div>
+                        <strong>Speed:</strong>
+                        ${speed}
+                    </div>
+
+                    <div>
+                        <strong>Heading:</strong>
+                        ${heading}
+                    </div>
+
+                    <div>
+                        <strong>Altitude:</strong>
+                        ${altitude}
+                    </div>
+
+                    <div>
+                        <strong>Satellites:</strong>
+                        ${satellites}
+                    </div>
+
+                    <div>
+                        <strong>Acceleration:</strong>
+                        ${acceleration}
+                    </div>
+
+                </div>
+            `)
+            .openOn(this.map);
     }
-
-    /*
-     * Create one Leaflet polyline per
-     * colour run instead of one per GPS point.
-     */
-    const layers = segments.map(segment => {
-
-        return L.polyline(
-            segment.coordinates,
-            {
-                color: segment.color,
-                weight: 5,
-                opacity: 0.9
-            }
-        );
-    });
-
-    this.speedSegments =
-        L.layerGroup(layers).addTo(this.map);
-
-    this.addSpeedLegend();
-
-    console.log(
-        `GPS points: ${trip.points.length}`
-    );
-
-    console.log(
-        `Speed route segments: ${segments.length}`
-    );
-}
 
     clearSpeedRoute() {
         if (this.speedSegments) {
